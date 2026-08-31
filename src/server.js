@@ -4,7 +4,7 @@ const cors = require('cors')
 const path = require('path')
 
 const socketio = require('socket.io')
-const http = require('http') 
+const http = require('http')
 
 const routes = require('./routes')
 
@@ -12,10 +12,15 @@ const app = express()
 const server = http.Server(app)
 const io = socketio(server)
 
-const conectedUsers = {}
+const connectedUsers = {}
 
+const mongoUri = process.env.MONGODB_URI
 
-mongoose.connect('mongodb+srv://adriano:adriano@omnistack-xcgbc.mongodb.net/semana09?retryWrites=true&w=majority', {
+if (!mongoUri) {
+    throw new Error('Missing required environment variable: MONGODB_URI')
+}
+
+mongoose.connect(mongoUri, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
@@ -23,30 +28,15 @@ mongoose.connect('mongodb+srv://adriano:adriano@omnistack-xcgbc.mongodb.net/sema
 io.on('connection', socket => {
     const { user_id } = socket.handshake.query
 
-    conectedUsers[user_id] = socket.id
+    connectedUsers[user_id] = socket.id
 })
 
 app.use((req, res, next) => {
     req.io = io
-    req.connectedUsers = conectedUsers
+    req.connectedUsers = connectedUsers
 
     return next()
 })
-
-// GET, POST, PUT, DELETE
-
-// GET: Buscar informações
-// Ex. Listagem de usuários
-
-// POST: Criar novas informações
-// Ex. Cadastro de usuário
-
-// PUT: Editar informação
-// DELETE: Deletar informação
-
-// req.query  -> Acessar query params (para filtros)
-// req.params -> Acessar route params (para edição, delete)
-// req.body   -> Acessar corpo da requisição (para criação, edição)
 
 app.use(cors())
 app.use(express.json())
